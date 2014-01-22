@@ -1,0 +1,5 @@
+{
+    "require": {
+        "markwilson/verbal-expressions-php": "dev-master"
+    }
+}

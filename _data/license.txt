@@ -1,0 +1,389 @@
+  *
+    SitePoint <http://www.sitepoint.com>
+  * Menu <#>
+
+  * Topics <#>
+      o
+
+
+                  « Back <#>
+
+      o HTML <http://www.sitepoint.com/html/>
+      o CSS <http://www.sitepoint.com/css/>
+      o JS <http://www.sitepoint.com/javascript/>
+      o PHP <http://www.sitepoint.com/php/>
+      o Ruby <http://www.sitepoint.com/ruby/>
+      o Mobile <http://www.sitepoint.com/mobile/>
+      o UX <http://www.sitepoint.com/ux/>
+      o Design <http://www.sitepoint.com/design/>
+  * Store </store/>
+  * Forums </forums/>
+  * Subscribe </newsletter>
+  *
+
+New Relic URGENT NERD ALERT: Optimize your apps now to get a nerdtastic
+t-shirt. nerd me now
+<http://newrelic.com/lp/brand2?utm_source=SITE&utm_medium=banner_ad&utm_content=hellobar&utm_campaign=q2banners&mpc=BA-SITE-RPM-en-100-nerdlife-hellobar>
+x
+
+
+    //PHP <http://www.sitepoint.com/php/> Libraries
+    <http://www.sitepoint.com/php/libraries-php/>
+
+
+  Say Hello to Boris: A Better REPL for PHP
+
+<http://www.sitepoint.com/author/shameerc/>
+
+Shameer C <http://www.sitepoint.com/author/shameerc/>
+
+Published April 1, 2013
+
+As web developers, we know the importance of the JavaScript console
+provided by the browser in testing out code snippets. We don’t need to
+write an entire HTML page and JavaScript code just to verify the
+functioning or logic of a small routine we wrote. Instead, we simply run
+the expressions in the console and immediately see the results.
+
+Similarly, a REPL (Read-Eval-Print Loop) is the console of a programming
+language in which we can write code line-by-line and see what it does.
+PHP has a REPL; if you haven’t used it yet, run |php –a| in a terminal.
+This will take you to the interactive PHP prompt at which you can enter
+your code.
+
+$ *php -a*
+Interactive shell
+
+php > *echo "Hello REPL";*
+Hello REPL
+
+All programming language REPLs work essentially the same way. There is
+an infinite loop which essentially processes three tasks: a read task
+that reads in an expression entered at the prompt, an eval function that
+parses and executes the expression, and an print function to display the
+results of the action.
+
+PHP’s REPL is very good in what it does, although it does have some
+limitations. For example, it doesn’t handle errors very well; the REPL
+exits back to console whenever a fatal occurs. Another drawback of PHP’s
+default REPL compared to other languages’ is that it doesn’t output the
+result of an expression to the console; we have to explicitly tell it to
+echo or print the result. Most other REPLs always output the result of
+an expression to the console.
+
+And so, Boris <https://github.com/d11wtq/boris> tries to solve these
+problems and other concerns as well. Boris is a tiny PHP REPL library
+written in PHP by Chris Corbyn <https://twitter.com/d11wtq>. It handles
+fatal errors more efficiently in that it won’t exit the console when an
+error occurs. Instead, it reports the error details and stack trace in
+the console. Boris also outputs the results of evaluating an expression.
+
+
+    Installation
+
+Boris is hosted on GitHub, so it’s easy to install using Git. Note that
+Boris requires the PCNTL extension, so if it’s not already available on
+your machine then you can follow these steps
+<http://www.php.net/manual/en/pcntl.installation.php> to get it
+installed. Then, clone Boris to your machine.
+
+$ *git clone git://github.com/d11wtq/boris.git*
+
+This will clone the entire Boris library into a new directory |boris| in
+your current location, which contains an executable PHP script to load
+and run Boris. (Boris can be installed using Composer as well, which
+I’ll show you later.)
+
+To start using Boris, step inside the directory and run the script.
+
+$ *cd boris*
+$ *./bin/boris*
+
+This will take you to the Boris prompt. Just as with the default PHP
+prompt, we can enter the code here and run. Let’s try some simple
+expressions.
+
+[1] boris> *$timezone = new DateTimeZone("America/New_York");*
+→ object(DateTimeZone)#5 (0) {
+}
+
+[2] boris> *$date =  new DateTime("now", $timezone);*
+→ object(DateTime)#6 (3) {
+  ["date"]=>
+  string(19) "2013-03-29 23:56:25"
+  ["timezone_type"]=>
+  int(3)
+  ["timezone"]=>
+  string(16) "America/New_York"
+}
+
+The result of an expression is always returned back to the console which
+helps us to inspect values/objects as soon as they are created.
+
+For easier access, you can add the path to the Boris script in your
+|.bashrc| (or similar) and reloading your shell environment. Then you’ll
+be able to run |boris| from anywhere in your terminal and be taken to
+the Boris prompt.
+
+export PATH="path/to/boris/bin:$PATH"
+
+
+    Customizing Boris
+
+An important feature of Boris is the ability to customize its features.
+If you look at the content of the |./bin/boris| file, you’ll find it’s
+just a PHP file that initializes a |Boris| instance. We can change the
+default prompt by passing it in the constructor.
+
+1
+2
+	
+|$boris| |= ||new| |BorisBoris(||'app $ '||);|
+|$boris||->start();|
+
+But customization is not just limited to the prompt. We can also define
+some default variables to be available inside the REPL, with something
+like this:
+
+1
+	
+|$boris||->setLocal(||"myVar"||, ||"Value"||);|
+
+We can then refer to the value with |$myVar|, which would help us avoid
+defining various variables every time we use Boris.
+
+By default, Boris shows results using |var_dump()|, but we can use our
+own inspectors to customize the REPL’s output. If you prefer some other
+format, create a class that implements the |Inspector| interface, which
+has a method called |inspect()|.
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+	
+|class| |MyInspector ||implements| |Inspector {|
+|    ||public| |function| |inspect(||$variable||) {|
+|        ||ob_start();|
+|        ||print_r(||$variable||);|
+|        ||return| |trim(ob_get_clean());|
+|    ||}|
+|}|
+ 
+|$boris||->setInspector(||new| |MyInspector());|
+
+
+    A REPL in your Application
+
+Boris can easily be embedded into your standalone PHP application or
+library as well. As an example, let’s create a command-line web service
+client using Boris and Guzzle. Guzzle is a powerful library for creating
+Web service clients and provides a simple interface for making API
+requests programmatically.
+
+First, create a |composer.json| file to set up the required libraries.
+
+1
+2
+3
+4
+5
+6
+	
+|{|
+|    ||"require"||: {|
+|        ||"d11wtq/boris"||: ||"dev-master"||,|
+|        ||"guzzle/guzzle"||: ||"~3.1"|
+|    ||}|
+|}|
+
+Then install these dependencies using Composer. This will download
+Boris, Guzzle, and their dependencies to a |vendor| folder in the
+current directory.
+
+$ *composer.phar install*
+
+Next, create an executable script (I’ve named it |wsclient|) that will
+launch our application.
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+	
+|#!/usr/bin/env php|
+|<?php|
+|// composer autoloader|
+|require| |"vendor/autoload.php"||;|
+|use| |GuzzleHttpClient;|
+ 
+|// Initialize Boris with our own prompt.|
+|$boris| |= ||new| |BorisBoris(||"wsclient > "||);|
+ 
+|// Guzzle client with our API base URL|
+|$client| |= ||new| |Client(||"http://myapplication/api"||);|
+ 
+|// We don't want to create the Client object every time.|
+|$boris||->setLocal(||"client"||, ||$client||);|
+ 
+|// Default inspectors are bit noisy. Let's override that.|
+|$boris||->setInspector(||new| |GuzzleInspector());|
+ 
+|// Start the REPL|
+|$boris||->start();|
+
+We’ve included the autoloader provided by Composer which makes things
+easier. Then we’ve initialized Boris and created a Guzzle client
+explicitly for our web service so that we don’t need to do this over and
+over again. The client object is made available inside the REPL by
+setting it as a local variable with |setLocal()|. We aren’t interested
+in inspecting the variables and objects here, so we’ve overridden the
+default inspector with |GuzzleInspctor|. You can create one that will
+help you to debug responses from server, but the one I’ve created for
+the example looks like this:
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+	
+|<?php|
+|class| |GuzzleInspector ||implements| |BorisInspector|
+|{|
+|    ||public| |function| |inspect(||$var||) {|
+|        ||ob_start();|
+|        ||echo| |(bool) ||$var||;|
+|        ||return| |trim(ob_get_clean());|
+|    ||}|
+|}|
+
+Make the script executable, and then start the REPL and try some things out.
+
+$ *chmod +x wsclient*
+$ *./wsclient*
+
+[1] wsclient > *$request = $client->get("/user")->setAuth("user", "pass");*
+ → true
+[2] wsclient > *$response = $request->send();*
+ → true
+[3] wsclient > *echo $response->getBody();*
+//{"login":"user","id":123000,"avatar_url":"...
+
+
+    Conclusion
+
+I don’t need to explain the real power of a REPL if you’ve ever used
+Python, Ruby, Scala, OCaml, or any other language that offers one. A
+REPL is a great tool when first learning a language, and also when
+testing and debugging various code snippets.
+
+Like many other mainstream languages, PHP has a REPL, but it has some
+drawbacks, especially in error handling. Boris is a tiny library, which
+tries to fill in its gap. More interestingly, you can easily create a
+CLI for your applications using Boris.
+
+Although Boris is really cool and pretty useful at times, it does have
+some limitations of it’s own, too. Boris depends on the forking
+capability of the operating system, so it can’t be used in Windows.
+Also, as of now it’s not a bulletproof application. There are some
+issues that need to be fixed, and some more features like
+auto-completion of function names and class methods would be handy.
+
+I hope you will find many other use cases of this library; feel free to
+share them in the comment section below.
+
+Image via Fotolia
+<http://us.fotolia.com/?utm_source=sitepoint&utm_medium=website_link&utm=campaign=sitepoint>
+
+
+    Shameer C <http://www.sitepoint.com/author/shameerc/>
+
+Shameer is a passionate programmer and open-source enthusiast currently
+working for QBurst <http://www.qburst.com/> at Kerala, India. He has
+experience in web development using Scala, PHP, Ruby, MySQL, and
+JavaScript. While not working, Shameer spends his time coding personal
+projects, learning, watching screen casts, blogging, etc. His specific
+areas of interest include cloud computing, and system and database
+administration.
+
+  * // <https://twitter.com/shameerc>
+  * // <https://plus.google.com/110381052688895429099>
+
+
+  Free book: Jump Start HTML5 Basics
+
+Learn all about the most exciting new features in HTML5, like native
+video, vector graphics, and new elements to make your life easier!
+
+Claim Book
+
+  *
+
+
+          About
+
+  * About us </about-us/>
+  * Advertise </advertising>
+  * Legals </legals>
+  * Feedback <mailto:feedback@sitepoint.com>
+
+  *
+
+
+          Our Sites
+
+  * Learnable <http://www.learnable.com>
+  * Reference <http://reference.sitepoint.com>
+  * Hosting Reviews </hosting-reviews/>
+  * Web Foundations </web-foundations/>
+
+  *
+
+
+          Connect
+
+  * // </feed> // </newsletter> // <https://www.facebook.com/sitepoint>
+    // <http://twitter.com/sitepointdotcom> //
+    <https://plus.google.com/+sitepoint>
+
+© 2000 – 2014 SitePoint Pty. Ltd.
+
+
+  Free ebook: Jump Start PHP
+
+Just for our readers in India, we're offering a free copy of our
+best-selling title Jump Start PHP. Get started with the fundamentals and
+learn best practices used by the pros like object-oriented programming.
+Enter your email address below to claim yours now!
+
+Go
+
+×
+Search for... <#>
+
